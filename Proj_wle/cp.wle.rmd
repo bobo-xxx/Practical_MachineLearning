@@ -1,0 +1,184 @@
+---
+title: "CourseProject-Weight Lifting Exercise"
+author: "Bocheng huang"
+date: "2024/6/22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load packages
+
+```{r, message=FALSE, warning=FALSE}
+rm(list = ls())
+library(caret)
+```
+
+## Load data
+
+Reading Weight Lifting Exercise Dataset from the Human Activity Recognition project. This dataset contains 19622 observations and 160 variables. `classe` variable is the outcome, which is the exercise class. In this project, `classe` is predicted based on the other variables.
+
+```{r}
+wle.train = read.csv("data/pml-training.csv", na.strings = c("#DIV/0!","NA",""))
+dim(wle.train)
+
+```
+
+## Dividing training and testing sets
+
+```{r}
+# make the results reproducible
+set.seed(123) 
+
+# Split the data into training and testing sets with 70% in the training set
+inTrain = createDataPartition(y = wle.train$classe, p = 0.7, list = FALSE)
+training = wle.train[inTrain, ]
+testing = wle.train[-inTrain, ]
+dim(training)
+dim(testing)
+```
+
+## Selecting variables
+
+Weight Lifting Exercise Dataset containing 160 variables, we need to remove some variables that are not useful for prediction.
+
+At first, variables `X`, `user_name`, `raw_timestamp_part_1`, `raw_timestamp_part_2`, `cvtd_timestamp`, `new_window`, and `num_window` are information records, which are not related to the exercise itself, so it is better to remove them.
+
+```{r}
+# Useless columns
+colnames(training)[1:7]
+# Remove the first 7 columns in both training and testing sets
+training = training[, -c(1:7)]
+```
+
+The dataset have many variables that contain missing values, we need to remove the variables that have more than 5% missing values.
+
+```{r}
+unUse = apply(training, 2, function(x) sum(is.na(x))/length(x)> 0.95)
+training = training[, !unUse]
+```
+
+Some variables have near zero variance, which also requiring removed.
+
+```{r}
+# calculate the near zero variance variables
+nzv = nearZeroVar(training, saveMetrics = TRUE)
+
+# variables that will be maintain
+maintain = rownames(nzv[!nzv$nzv & !nzv$zeroVar,])
+training = training[, maintain]
+dim(training)
+```
+
+53 variables are selected for the training set, and we use `classe` to be our outcome, so we need to remove it from the training set.
+
+```{r}
+# Remove the outcome variable from the training set
+training_y = training$classe
+training = subset(training, select = -c(classe))
+dim(training)
+
+```
+
+Finally, 52 variables are selected for the training set.
+
+## Principle Component Analysis
+
+Although useless, near zero variance variables, and variables with more than 5% missing values are filtered, it still has 52 variables in the training set. 52 variables require a lot of computation, so it is better to reduce the number of variables by PCA.
+
+```{r}
+# Preprocess the data with PCA
+preProc = preProcess(training, method = "pca", thresh = 0.85)
+preProc$numComp # see how many components are selected
+rot = preProc$rotation # see the rotation matrix
+
+# Apply the pre-processing to the training set
+trainingPC = predict(preProc, training)
+dim(trainingPC)
+```
+
+## GBM
+
+### 1. Train the model
+
+Fit a GBM model with using 10-fold cross-validation to evaluate the model.
+
+```{r, message=FALSE, warning=FALSE}
+# Load the doParallel package
+library(doParallel)
+```
+
+```{r, message=FALSE, warning=FALSE}
+# Using parallel to speed up the training process
+cl <- makePSOCKcluster(10)
+registerDoParallel(cl)
+# Fitting GBM model with 10-fold cross-validation
+mod1 <-  train(trainingPC, training_y, method = "gbm", trControl = trainControl(method = "cv", number = 10, allowParallel = TRUE))
+stopImplicitCluster()
+mod1
+```
+
+### 2. Evaluate the model with the testing set
+
+Handle the testing set as the training set.
+
+```{r}
+# Predict the testing set
+# Remove the same variables in the testing set
+testing = testing[, maintain]
+testing_y = testing$classe
+testing_y = factor(testing$classe, levels = unique(training_y))
+testing = subset(testing, select = -c(classe))
+# Apply the pre-processing to the testing set
+testingPC = predict(preProc, testing)
+```
+
+Now we can evaluate the model with the testing set.
+
+```{r}
+# Predict the testing set
+predict1_ts = predict(mod1, testingPC)
+confusionMatrix(predict1_ts, testing_y, mode = "everything")
+
+```
+
+GBM model has an accuracy of 0.7806, which is much lower than the Random Forest model. The confusion matrix shows that the model has a high error rate.
+
+## Random Forest
+
+### 1. Train the model
+
+We first use Random Forest to train the model. We use 10-fold cross-validation to evaluate the model, which will be time-consuming, so we use parallel to speed up the training process.
+
+```{r, warning=FALSE}
+# Using parallel to speed up the training process
+cl <- makePSOCKcluster(10)
+registerDoParallel(cl)
+# Fitting random forest model with 10-fold cross-validation
+mod2 <-  train(trainingPC, training_y, method = "rf", trControl = trainControl(method = "cv", number = 10, allowParallel = TRUE))
+stopImplicitCluster()
+mod2$finalModel
+```
+
+### 2. Evaluate the model with the testing set
+
+Predicting the testing set with Random Forest model.
+
+```{r}
+predict2_ts = predict(mod2, testingPC)
+confusionMatrix(predict2_ts, testing_y, mode = "everything")
+```
+
+The model has an accuracy of 0.9684, which is good enough. We can see the confusion matrix showing that all metrics are great.
+
+## Conclusion
+
+A Random Forest model with with accuracy of 0.96 and a GBM model with accuracy of 0.78 are trained to predict the weight lifting exercise class. The Random Forest model has a higher accuracy than the GBM model. The Random Forest model is selected as the final model to predict the 20 test cases.
+
+## Reference
+
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
+
+Read more: [http:/groupware.les.inf.puc-rio.br/har#wle_paper_section#ixzz4TjqYuyDS](http:/groupware.les.inf.puc-rio.br/har#wle_paper_section#ixzz4TjqYuyDS){.uri}
