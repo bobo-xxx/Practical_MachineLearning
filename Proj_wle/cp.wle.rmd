@@ -99,7 +99,7 @@ trainingPC = predict(preProc, training)
 dim(trainingPC)
 ```
 
-## GBM
+## Gradient Boosting Machine
 
 ### 1. Train the model
 
@@ -140,11 +140,16 @@ Now we can evaluate the model with the testing set.
 ```{r}
 # Predict the testing set
 predict1_ts = predict(mod1, testingPC)
-confusionMatrix(predict1_ts, testing_y, mode = "everything")
-
+CM1 = confusionMatrix(predict1_ts, testing_y, mode = "everything")
+CM1
 ```
 
-GBM model has an accuracy of 0.7806, which is much lower than the Random Forest model. The confusion matrix shows that the model has a high error rate.
+```{r}
+outOfSampleErr1 = 1 - CM1$overall["Accuracy"]
+outOfSampleErr1
+```
+
+GBM model has an accuracy of 0.7806, out of sample error is 0.2194, which shows the model has a high error rate.
 
 ## Random Forest
 
@@ -168,14 +173,20 @@ Predicting the testing set with Random Forest model.
 
 ```{r}
 predict2_ts = predict(mod2, testingPC)
-confusionMatrix(predict2_ts, testing_y, mode = "everything")
+CM2 = confusionMatrix(predict2_ts, testing_y, mode = "everything")
+CM2
 ```
 
-The model has an accuracy of 0.9684, which is good enough. We can see the confusion matrix showing that all metrics are great.
+```{r}
+outOfSampleErr2 = 1 - CM2$overall["Accuracy"]
+outOfSampleErr2
+```
+
+The model has an accuracy of 0.9684, and out of sample error is 0.0316, which is good enough. We can also see the confusion matrix showing that all metrics are great.
 
 ## Conclusion
 
-A Random Forest model with with accuracy of 0.96 and a GBM model with accuracy of 0.78 are trained to predict the weight lifting exercise class. The Random Forest model has a higher accuracy than the GBM model. The Random Forest model is selected as the final model to predict the 20 test cases.
+A Random Forest model with with accuracy of 0.9684 and a GBM model with accuracy of 0.7806 are trained to predict the weight lifting exercise class. The Random Forest model has a higher accuracy than the GBM model. The Random Forest model is selected as the final model to predict the 20 test cases.
 
 ## Reference
 

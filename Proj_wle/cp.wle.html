@@ -443,8 +443,8 @@ trainingPC = predict(preProc, training)
 dim(trainingPC)</code></pre>
 <pre><code>## [1] 13737    15</code></pre>
 </div>
-<div id="gbm" class="section level2">
-<h2>GBM</h2>
+<div id="gradient-boosting-machine" class="section level2">
+<h2>Gradient Boosting Machine</h2>
 <div id="train-the-model" class="section level3">
 <h3>1. Train the model</h3>
 <p>Fit a GBM model with using 10-fold cross-validation to evaluate the
@@ -520,7 +520,8 @@ testingPC = predict(preProc, testing)</code></pre>
 <p>Now we can evaluate the model with the testing set.</p>
 <pre class="r"><code># Predict the testing set
 predict1_ts = predict(mod1, testingPC)
-confusionMatrix(predict1_ts, testing_y, mode = &quot;everything&quot;)</code></pre>
+CM1 = confusionMatrix(predict1_ts, testing_y, mode = &quot;everything&quot;)
+CM1</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
@@ -556,9 +557,12 @@ confusionMatrix(predict1_ts, testing_y, mode = &quot;everything&quot;)</code></p
 ## Detection Rate         0.2425   0.1366   0.1353   0.1286   0.1376
 ## Detection Prevalence   0.3071   0.1799   0.1971   0.1609   0.1550
 ## Balanced Accuracy      0.8811   0.8261   0.8505   0.8733   0.8637</code></pre>
-<p>GBM model has an accuracy of 0.7806, which is much lower than the
-Random Forest model. The confusion matrix shows that the model has a
-high error rate.</p>
+<pre class="r"><code>outOfSampleErr1 = 1 - CM1$overall[&quot;Accuracy&quot;]
+outOfSampleErr1</code></pre>
+<pre><code>##  Accuracy 
+## 0.2193713</code></pre>
+<p>GBM model has an accuracy of 0.7806, out of sample error is 0.2194,
+which shows the model has a high error rate.</p>
 </div>
 </div>
 <div id="random-forest" class="section level2">
@@ -595,7 +599,8 @@ mod2$finalModel</code></pre>
 <h3>2. Evaluate the model with the testing set</h3>
 <p>Predicting the testing set with Random Forest model.</p>
 <pre class="r"><code>predict2_ts = predict(mod2, testingPC)
-confusionMatrix(predict2_ts, testing_y, mode = &quot;everything&quot;)</code></pre>
+CM2 = confusionMatrix(predict2_ts, testing_y, mode = &quot;everything&quot;)
+CM2</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
@@ -631,17 +636,22 @@ confusionMatrix(predict2_ts, testing_y, mode = &quot;everything&quot;)</code></p
 ## Detection Rate         0.2805   0.1856   0.1687   0.1536   0.1799
 ## Detection Prevalence   0.2872   0.1912   0.1840   0.1560   0.1816
 ## Balanced Accuracy      0.9885   0.9759   0.9747   0.9675   0.9883</code></pre>
-<p>The model has an accuracy of 0.9684, which is good enough. We can see
-the confusion matrix showing that all metrics are great.</p>
+<pre class="r"><code>outOfSampleErr2 = 1 - CM2$overall[&quot;Accuracy&quot;]
+outOfSampleErr2</code></pre>
+<pre><code>##   Accuracy 
+## 0.03160578</code></pre>
+<p>The model has an accuracy of 0.9684, and out of sample error is
+0.0316, which is good enough. We can also see the confusion matrix
+showing that all metrics are great.</p>
 </div>
 </div>
 <div id="conclusion" class="section level2">
 <h2>Conclusion</h2>
-<p>A Random Forest model with with accuracy of 0.96 and a GBM model with
-accuracy of 0.78 are trained to predict the weight lifting exercise
-class. The Random Forest model has a higher accuracy than the GBM model.
-The Random Forest model is selected as the final model to predict the 20
-test cases.</p>
+<p>A Random Forest model with with accuracy of 0.9684 and a GBM model
+with accuracy of 0.7806 are trained to predict the weight lifting
+exercise class. The Random Forest model has a higher accuracy than the
+GBM model. The Random Forest model is selected as the final model to
+predict the 20 test cases.</p>
 </div>
 <div id="reference" class="section level2">
 <h2>Reference</h2>
