@@ -20,7 +20,7 @@ library(caret)
 
 Reading Weight Lifting Exercise Dataset from the Human Activity Recognition project. This dataset contains 19622 observations and 160 variables. `classe` variable is the outcome, which is the exercise class. In this project, `classe` is predicted based on the other variables.
 
-```{r}
+```{r load data}
 wle.train = read.csv("data/pml-training.csv", na.strings = c("#DIV/0!","NA",""))
 dim(wle.train)
 
@@ -28,7 +28,7 @@ dim(wle.train)
 
 ## Dividing training and testing sets
 
-```{r}
+```{r split data}
 # make the results reproducible
 set.seed(123) 
 
@@ -46,7 +46,7 @@ Weight Lifting Exercise Dataset containing 160 variables, we need to remove some
 
 At first, variables `X`, `user_name`, `raw_timestamp_part_1`, `raw_timestamp_part_2`, `cvtd_timestamp`, `new_window`, and `num_window` are information records, which are not related to the exercise itself, so it is better to remove them.
 
-```{r}
+```{r remove useless feature}
 # Useless columns
 colnames(training)[1:7]
 # Remove the first 7 columns in both training and testing sets
@@ -55,14 +55,14 @@ training = training[, -c(1:7)]
 
 The dataset have many variables that contain missing values, we need to remove the variables that have more than 5% missing values.
 
-```{r}
+```{r remove feature with high missing value rate}
 unUse = apply(training, 2, function(x) sum(is.na(x))/length(x)> 0.95)
 training = training[, !unUse]
 ```
 
 Some variables have near zero variance, which also requiring removed.
 
-```{r}
+```{r remove near zero variance feature}
 # calculate the near zero variance variables
 nzv = nearZeroVar(training, saveMetrics = TRUE)
 
@@ -74,7 +74,7 @@ dim(training)
 
 53 variables are selected for the training set, and we use `classe` to be our outcome, so we need to remove it from the training set.
 
-```{r}
+```{r outcome and preditors}
 # Remove the outcome variable from the training set
 training_y = training$classe
 training = subset(training, select = -c(classe))
@@ -88,7 +88,7 @@ Finally, 52 variables are selected for the training set.
 
 Although useless, near zero variance variables, and variables with more than 5% missing values are filtered, it still has 52 variables in the training set. 52 variables require a lot of computation, so it is better to reduce the number of variables by PCA.
 
-```{r}
+```{r PCA}
 # Preprocess the data with PCA
 preProc = preProcess(training, method = "pca", thresh = 0.85)
 preProc$numComp # see how many components are selected
@@ -105,12 +105,12 @@ dim(trainingPC)
 
 Fit a GBM model with using 10-fold cross-validation to evaluate the model.
 
-```{r, message=FALSE, warning=FALSE}
+```{r parallel, message=FALSE, warning=FALSE}
 # Load the doParallel package
 library(doParallel)
 ```
 
-```{r, message=FALSE, warning=FALSE}
+```{r fit GBM model, message=FALSE, warning=FALSE}
 # Using parallel to speed up the training process
 cl <- makePSOCKcluster(10)
 registerDoParallel(cl)
@@ -120,11 +120,17 @@ stopImplicitCluster()
 mod1
 ```
 
+Plot GBM model
+
+```{r plot GBM model,message=FALSE, warning=FALSE}
+plot(mod1)
+```
+
 ### 2. Evaluate the model with the testing set
 
 Handle the testing set as the training set.
 
-```{r}
+```{r testing set}
 # Predict the testing set
 # Remove the same variables in the testing set
 testing = testing[, maintain]
@@ -137,14 +143,14 @@ testingPC = predict(preProc, testing)
 
 Now we can evaluate the model with the testing set.
 
-```{r}
+```{r evaluate GBM on testing set}
 # Predict the testing set
 predict1_ts = predict(mod1, testingPC)
 CM1 = confusionMatrix(predict1_ts, testing_y, mode = "everything")
 CM1
 ```
 
-```{r}
+```{r out of sample rate GBM}
 outOfSampleErr1 = 1 - CM1$overall["Accuracy"]
 outOfSampleErr1
 ```
@@ -157,7 +163,7 @@ GBM model has an accuracy of 0.7806, out of sample error is 0.2194, which shows 
 
 We first use Random Forest to train the model. We use 10-fold cross-validation to evaluate the model, which will be time-consuming, so we use parallel to speed up the training process.
 
-```{r, warning=FALSE}
+```{r fit rf model, warning=FALSE}
 # Using parallel to speed up the training process
 cl <- makePSOCKcluster(10)
 registerDoParallel(cl)
@@ -167,17 +173,23 @@ stopImplicitCluster()
 mod2$finalModel
 ```
 
+Plot RF model
+
+```{r plot rf model,message=FALSE, warning=FALSE}
+plot(mod2$finalModel)
+```
+
 ### 2. Evaluate the model with the testing set
 
 Predicting the testing set with Random Forest model.
 
-```{r}
+```{r evaluate on testing set}
 predict2_ts = predict(mod2, testingPC)
 CM2 = confusionMatrix(predict2_ts, testing_y, mode = "everything")
 CM2
 ```
 
-```{r}
+```{r out of sample error rf}
 outOfSampleErr2 = 1 - CM2$overall["Accuracy"]
 outOfSampleErr2
 ```
@@ -190,7 +202,7 @@ A Random Forest model with with accuracy of 0.9684 and a GBM model with accuracy
 
 # Prediction with test data
 
-```{r message=FALSE, warning=FALSE}
+```{r test data,message=FALSE, warning=FALSE}
 dir.create("output")
 test_data = read.csv("data/pml-testing.csv", na.strings = c("#DIV/0!","NA",""))
 dim(test_data)
@@ -198,7 +210,7 @@ dim(test_data)
 
 Pre-process the test data with PCA.
 
-```{r message=FALSE, warning=FALSE}
+```{r handle test data, message=FALSE, warning=FALSE}
 # Remove the same variables in the testing set
 test_data = test_data[, maintain[maintain != "classe"]]
 
@@ -209,7 +221,7 @@ dim(test_dataPC)
 
 Predict the test data with Random Forest model.
 
-```{r message=FALSE, warning=FALSE}
+```{r predict with rf model, message=FALSE, warning=FALSE}
 # Predict the testing set
 predict_td = predict(mod2, test_dataPC)
 predict_td
@@ -217,7 +229,7 @@ predict_td
 
 Save output
 
-```{r message=FALSE, warning=FALSE}
+```{r save, message=FALSE, warning=FALSE}
 write.csv(predict_td, file = "output/predictions.csv")
 ```
 
