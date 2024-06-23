@@ -1,11 +1,42 @@
-─Proj_wle
+卷 系统 的文件夹 PATH 列表
+卷序列号为 D231-60C5
+C:.
+│  .gitattributes
+│  .gitignore
+│  README.md
+│  tree.txt
+│  
+├─1-ML
+│  │  .Rhistory
+│  │  1-ML.Rproj
+│  │  Lesson1.r
+│  │  Lesson1.rmd
+│  │  
+│  └─output
+│          predict_test.txt
+│          
+├─2-ML
+│      Lesson2.r
+│      
+├─3-ML
+│      Lesson3.r
+│      
+├─4-ML
+│      gaData.csv
+│      Lesson4.r
+│      
+└─Proj_wle
+    │  .Rhistory
     │  cp.wle.html
     │  cp.wle.rmd
     │  Predict_test.R
     │  Proj_wle.Rproj
     │  run.RData
     │  
-    └─data
-            pml-testing.csv
-            pml-training.csv
+    ├─data
+    │      pml-testing.csv
+    │      pml-training.csv
+    │      
+    └─output
+            predictions.csv
             
