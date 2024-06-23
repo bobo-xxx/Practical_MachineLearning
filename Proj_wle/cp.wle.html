@@ -653,6 +653,28 @@ exercise class. The Random Forest model has a higher accuracy than the
 GBM model. The Random Forest model is selected as the final model to
 predict the 20 test cases.</p>
 </div>
+<div id="prediction-with-test-data" class="section level1">
+<h1>Prediction with test data</h1>
+<pre class="r"><code>dir.create(&quot;output&quot;)
+test_data = read.csv(&quot;data/pml-testing.csv&quot;, na.strings = c(&quot;#DIV/0!&quot;,&quot;NA&quot;,&quot;&quot;))
+dim(test_data)</code></pre>
+<pre><code>## [1]  20 160</code></pre>
+<p>Pre-process the test data with PCA.</p>
+<pre class="r"><code># Remove the same variables in the testing set
+test_data = test_data[, maintain[maintain != &quot;classe&quot;]]
+
+# Apply the pre-processing to the testing set
+test_dataPC = predict(preProc, test_data)
+dim(test_dataPC)</code></pre>
+<pre><code>## [1] 20 15</code></pre>
+<p>Predict the test data with Random Forest model.</p>
+<pre class="r"><code># Predict the testing set
+predict_td = predict(mod2, test_dataPC)
+predict_td</code></pre>
+<pre><code>##  [1] B A A A A E D B A A B C B A E E A B B B
+## Levels: A B C D E</code></pre>
+<p>Save output</p>
+<pre class="r"><code>write.csv(predict_td, file = &quot;output/predictions.csv&quot;)</code></pre>
 <div id="reference" class="section level2">
 <h2>Reference</h2>
 <p>Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H.
@@ -660,6 +682,7 @@ Qualitative Activity Recognition of Weight Lifting Exercises.
 Proceedings of 4th International Conference in Cooperation with SIGCHI
 (Augmented Human ’13) . Stuttgart, Germany: ACM SIGCHI, 2013.</p>
 <p>Read more: <a href="http:/groupware.les.inf.puc-rio.br/har#wle_paper_section#ixzz4TjqYuyDS" class="uri">http:/groupware.les.inf.puc-rio.br/har#wle_paper_section#ixzz4TjqYuyDS</a></p>
+</div>
 </div>
 
 

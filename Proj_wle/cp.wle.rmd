@@ -188,6 +188,39 @@ The model has an accuracy of 0.9684, and out of sample error is 0.0316, which is
 
 A Random Forest model with with accuracy of 0.9684 and a GBM model with accuracy of 0.7806 are trained to predict the weight lifting exercise class. The Random Forest model has a higher accuracy than the GBM model. The Random Forest model is selected as the final model to predict the 20 test cases.
 
+# Prediction with test data
+
+```{r message=FALSE, warning=FALSE}
+dir.create("output")
+test_data = read.csv("data/pml-testing.csv", na.strings = c("#DIV/0!","NA",""))
+dim(test_data)
+```
+
+Pre-process the test data with PCA.
+
+```{r message=FALSE, warning=FALSE}
+# Remove the same variables in the testing set
+test_data = test_data[, maintain[maintain != "classe"]]
+
+# Apply the pre-processing to the testing set
+test_dataPC = predict(preProc, test_data)
+dim(test_dataPC)
+```
+
+Predict the test data with Random Forest model.
+
+```{r message=FALSE, warning=FALSE}
+# Predict the testing set
+predict_td = predict(mod2, test_dataPC)
+predict_td
+```
+
+Save output
+
+```{r message=FALSE, warning=FALSE}
+write.csv(predict_td, file = "output/predictions.csv")
+```
+
 ## Reference
 
 Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
